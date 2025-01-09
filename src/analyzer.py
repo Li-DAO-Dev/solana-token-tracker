@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import plotly.graph_objects as go
 import plotly.express as px
 from typing import Dict, Any
+import os
 
 class TokenAnalyzer:
     def __init__(self, transactions_df: pd.DataFrame):
@@ -16,6 +17,8 @@ class TokenAnalyzer:
             self.df['timestamp'] = pd.to_datetime(self.df['timestamp'])
             self.df['hour'] = self.df['timestamp'].dt.hour
             self.df['date'] = self.df['timestamp'].dt.date
+            # 将 lamport 转换为 SOL (1 SOL = 1e9 lamport)
+            self.df['sol_amount'] = self.df['lamport'] / 1e9
             
     def analyze_volume(self) -> Dict[str, Any]:
         """分析交易量"""
@@ -28,10 +31,10 @@ class TokenAnalyzer:
             }
             
         volume_stats = {
-            "total_volume": self.df['amount'].sum(),
-            "avg_volume": self.df['amount'].mean(),
-            "max_volume": self.df['amount'].max(),
-            "min_volume": self.df['amount'].min()
+            "total_volume": self.df['sol_amount'].sum(),
+            "avg_volume": self.df['sol_amount'].mean(),
+            "max_volume": self.df['sol_amount'].max(),
+            "min_volume": self.df['sol_amount'].min()
         }
         return volume_stats
         
@@ -40,15 +43,19 @@ class TokenAnalyzer:
         if self.df.empty:
             return {
                 "total_transactions": 0,
-                "unique_addresses": 0,
-                "avg_transaction_size": 0
+                "successful_transactions": 0,
+                "avg_fee": 0,
+                "success_rate": 0
             }
             
+        successful_txs = self.df['success'].sum()
+        total_txs = len(self.df)
+        
         tx_stats = {
-            "total_transactions": len(self.df),
-            "unique_addresses": len(set(self.df['from_address'].unique()) | 
-                                  set(self.df['to_address'].unique())),
-            "avg_transaction_size": self.df['amount'].mean()
+            "total_transactions": total_txs,
+            "successful_transactions": successful_txs,
+            "avg_fee": self.df['fee'].mean() / 1e9,  # 转换为 SOL
+            "success_rate": (successful_txs / total_txs * 100) if total_txs > 0 else 0
         }
         return tx_stats
         
@@ -57,12 +64,45 @@ class TokenAnalyzer:
         if self.df.empty:
             return ""
             
-        hourly_volume = self.df.groupby('hour')['amount'].sum().reset_index()
+        # 确保reports目录存在
+        os.makedirs("data/reports", exist_ok=True)
+            
+        hourly_volume = self.df.groupby('hour').agg({
+            'sol_amount': 'sum',
+            'signature': 'count'
+        }).reset_index()
         
-        fig = px.bar(hourly_volume, 
-                    x='hour', 
-                    y='amount',
-                    title='Hourly Transaction Volume')
+        # 创建双轴图表
+        fig = go.Figure()
+        
+        # 添加交易量柱状图
+        fig.add_trace(go.Bar(
+            x=hourly_volume['hour'],
+            y=hourly_volume['sol_amount'],
+            name='交易量 (SOL)',
+            yaxis='y'
+        ))
+        
+        # 添加交易数量折线图
+        fig.add_trace(go.Scatter(
+            x=hourly_volume['hour'],
+            y=hourly_volume['signature'],
+            name='交易数量',
+            yaxis='y2'
+        ))
+        
+        # 更新布局
+        fig.update_layout(
+            title='每小时交易量和交易数量分布',
+            xaxis_title='小时',
+            yaxis_title='交易量 (SOL)',
+            yaxis2=dict(
+                title='交易数量',
+                overlaying='y',
+                side='right'
+            ),
+            barmode='group'
+        )
         
         chart_path = "data/reports/hourly_volume.html"
         fig.write_html(chart_path)
