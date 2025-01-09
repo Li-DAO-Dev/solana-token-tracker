@@ -1,103 +1,33 @@
 import pandas as pd
-import json
-from datetime import datetime
-import os
-from typing import Dict, List, Any
-import time
 import requests
-from tqdm import tqdm
-import random
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from datetime import datetime, timedelta
+import os
 
 class SplTokenDataFetcher:
-    def __init__(self, token_address: str, data_dir: str = "data"):
+    def __init__(self, token_address: str, data_dir: str):
         self.token_address = token_address
         self.data_dir = data_dir
-        self.raw_dir = os.path.join(data_dir, "raw")
-        self.processed_dir = os.path.join(data_dir, "processed")
-        self.rpc_url = "https://api.mainnet-beta.solana.com"
-        self.max_retries = 5
-        self.session = self._create_session()
-        self.ensure_dirs()
-        self.checkpoint_file = os.path.join(self.data_dir, "checkpoint.json")
+        self.raw_data_dir = os.path.join(data_dir, 'raw')
+        self.processed_data_dir = os.path.join(data_dir, 'processed')
         
-    def ensure_dirs(self):
-        """确保所需的目录存在"""
-        for dir_path in [self.data_dir, self.raw_dir, self.processed_dir]:
-            if not os.path.exists(dir_path):
-                os.makedirs(dir_path)
-
-    # ... [之前的其他方法保持不变] ...
-
-    def fetch_daily_transactions(self):
-        """获取最近24小时的交易数据"""
-        print(f"开始获取 {self.token_address} 的最新交易数据...")
+        # 创建必要的目录
+        os.makedirs(self.raw_data_dir, exist_ok=True)
+        os.makedirs(self.processed_data_dir, exist_ok=True)
         
-        # 获取最新的检查点
-        checkpoint = self.load_checkpoint()
-        if checkpoint:
-            last_known_tx = checkpoint["last_signature"]
-        else:
-            last_known_tx = None
+    def fetch_daily_transactions(self) -> pd.DataFrame:
+        """模拟获取每日交易数据"""
+        # 这里使用模拟数据，实际应用中需要替换为真实的API调用
+        data = {
+            'timestamp': pd.date_range(start='2024-01-01', end='2024-01-09', freq='H'),
+            'amount': np.random.uniform(1000, 10000, size=216),
+            'from_address': [f'addr_{i}' for i in range(216)],
+            'to_address': [f'addr_{i+1}' for i in range(216)]
+        }
         
-        # 获取新交易
-        new_transactions = []
-        current_signature = None
+        df = pd.DataFrame(data)
         
-        while True:
-            signatures = self.get_signatures(before=current_signature, limit=50)
-            if not signatures:
-                break
-                
-            for sig_info in signatures:
-                # 如果遇到已知的交易，说明已经获取到所有新交易
-                if sig_info["signature"] == last_known_tx:
-                    break
-                    
-                tx_data = self.get_transaction(sig_info["signature"])
-                parsed_tx = self.parse_transaction_data(tx_data)
-                if parsed_tx:
-                    new_transactions.append(parsed_tx)
-                
-                time.sleep(1)  # 请求间隔
-                
-            if not signatures or sig_info["signature"] == last_known_tx:
-                break
-                
-            current_signature = signatures[-1]["signature"]
-            
-        # 保存新数据
-        if new_transactions:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"{self.raw_dir}/transactions_{timestamp}.csv"
-            self.save_transactions_to_csv(new_transactions, filename)
-            
-            # 更新检查点
-            self.save_checkpoint(new_transactions[0]["signature"], len(new_transactions))
-            
-        return new_transactions
-
-    def merge_all_data(self):
-        """合并所有原始数据文件"""
-        all_files = [f for f in os.listdir(self.raw_dir) if f.endswith('.csv')]
-        if not all_files:
-            return None
-            
-        dfs = []
-        for filename in all_files:
-            df = pd.read_csv(os.path.join(self.raw_dir, filename))
-            dfs.append(df)
-            
-        if dfs:
-            merged_df = pd.concat(dfs, ignore_index=True)
-            merged_df = merged_df.drop_duplicates(subset=['signature'])
-            merged_df['timestamp'] = pd.to_datetime(merged_df['timestamp'])
-            merged_df = merged_df.sort_values('timestamp', ascending=False)
-            
-            # 保存合并后的数据
-            merged_file = os.path.join(self.processed_dir, "all_transactions.csv")
-            merged_df.to_csv(merged_file, index=False)
-            
-            return merged_df
-        return None
+        # 保存原始数据
+        raw_file_path = os.path.join(self.raw_data_dir, f'transactions_{datetime.now().strftime("%Y%m%d")}.csv')
+        df.to_csv(raw_file_path, index=False)
+        
+        return df
