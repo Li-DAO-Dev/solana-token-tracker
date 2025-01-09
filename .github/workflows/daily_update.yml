@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
       with:
         fetch-depth: 0
         
@@ -24,6 +25,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
+    - name: List directory contents
+      run: |
+        pwd
+        ls -la
+        
     - name: Run update script
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -34,4 +40,4 @@ jobs:
         git config --local user.email "weinizhidao@lidao.pro"
         git config --local user.name "weinikown"
         git add -A
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Update token data $(date +'%Y-%m-%d')" && git
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Update token data $(date +'%Y-%m-%d')" && git push)
