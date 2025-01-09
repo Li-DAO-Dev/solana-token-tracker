@@ -15,12 +15,14 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'  # 使用更稳定的 Python 3.9
-        cache: 'pip'  # 启用 pip 缓存
+        python-version: '3.8'  # 使用 Python 3.8 以确保最佳兼容性
+        cache: 'pip'
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        # 按顺序安装依赖
+        pip install numpy==1.21.6
         pip install -r requirements.txt
     
     - name: Run tracker
