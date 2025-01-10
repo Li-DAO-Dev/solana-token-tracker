@@ -1,11 +1,8 @@
 import logging
-from src.config import RAW_DATA_DIR, PROCESSED_DATA_DIR, REPORTS_DIR
+from src.config import RAW_DATA_DIR, PROCESSED_DATA_DIR, REPORTS_DIR, TOKEN_MINT, RPC_URL
 from src.fetcher import TokenDataFetcher
 from src.processor import EnhancedAnalyzer
 import time
-
-TOKEN_MINT = "HhUVkZ1qz8vfMqZDemLyxBFxrHFKVSYAk7a6227Lpump"
-RPC_URL = "https://bold-proud-thunder.solana-mainnet.quiknode.pro/185a89799b19a64f14c9a573ed70875ea76c211c"
 
 # 配置日志
 logging.basicConfig(
@@ -18,14 +15,15 @@ def main():
     try:
         # 创建数据获取器
         # 创建实例
-        fetcher = TokenDataFetcher(RPC_URL)
+        #fetcher = TokenDataFetcher(RPC_URL)
 
         # 获取代币持有者
         logger.info("开始获取数据...")
-        top_holders = fetcher.get_top_holders(TOKEN_MINT)
+        #top_holders = fetcher.get_top_holders(TOKEN_MINT)
+        #print(top_holders)
 
         # 保存交易记录
-        fetcher.save_transactions_to_json(top_holders, RAW_DATA_DIR)
+        #fetcher.save_transactions_to_json(top_holders, RAW_DATA_DIR)
         logger.info("处理数据...")
         # 创建数据处理器
         processor = EnhancedAnalyzer()

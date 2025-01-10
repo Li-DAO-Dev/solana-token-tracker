@@ -118,8 +118,11 @@ class TokenDataAnalyzer:
         Returns:
             str: 格式化的时间字符串
         """
-        timestamp = self.genesis_timestamp + (slot * self.slot_duration)
-        return datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+        #timestamp = self.genesis_timestamp + slot #(slot * self.slot_duration)
+        import pytz
+        utc = pytz.utc
+        #return (datetime.utcfromtimestamp(self.genesis_timestamp).replace(tzinfo=utc) +
+        return datetime.fromtimestamp(slot, utc).strftime('%Y-%m-%d %H:%M:%S')
 
     def analyze_transactions(self, transactions: List[Dict]) -> None:
         """
@@ -163,8 +166,8 @@ class TokenDataAnalyzer:
             # 保存分析结果
             self.analysis_results[address].append({
                 "交易签名": tx["交易签名"],
-                "Slot": transaction_details["slot"],
-                "标准时间": self.slot_to_standard_time(transaction_details["slot"]),
+                "Slot": transaction_details["blockTime"],
+                "标准时间": self.slot_to_standard_time(transaction_details["blockTime"]),
                 "余额变化": balance_change,
                 "交易类型": transaction_type,
                 "交易详情": transaction_details
