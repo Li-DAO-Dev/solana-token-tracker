@@ -10,6 +10,7 @@ kaleido==0.2.1  # 用于保存 plotly 图表为静态文件
 requests==2.28.2
 python-dateutil==2.8.2
 pytz==2023.3
+python-dotenv==1.0.0
 
 # 可选的数据可视化增强
 matplotlib==3.5.3

@@ -36,3 +36,9 @@ data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+test/*
+visualizations/*
+src/config.py
+
+data/*
+logs/*
